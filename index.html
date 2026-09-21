@@ -8,7 +8,12 @@
     <title>용현3동 행복마을 현장기록</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="stylesheet" href="./styles.css" />
-    <link rel="stylesheet" href="./location.css" />
+    <style>
+      .map-tools { display: grid; gap: 8px; z-index: 30; pointer-events: auto; }
+      .floating-button.accent { background: var(--orange); color: #fff; }
+      .floating-button:disabled { cursor: wait; opacity: 0.72; }
+      .map-instruction { z-index: 30; }
+    </style>
   </head>
   <body>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -72,7 +77,7 @@
 
     <dialog id="record-dialog" class="sheet-dialog">
       <form id="record-form" method="dialog">
-        <div class="dialog-head"><div><p class="eyebrow">현장 기록</p><h2 id="record-dialog-title">새 기록</h2></div><button class="close-button" value="cancel" aria-label="닫기">×</button></div>
+        <div class="dialog-head"><div><p class="eyebrow">현장 기록</p><h2 id="record-dialog-title">새 기록</h2></div><button id="record-close" class="close-button" type="button" aria-label="닫기">×</button></div>
         <input id="record-id" type="hidden" />
         <div class="coordinate-box"><span>선택 위치</span><strong id="coordinate-text">-</strong></div>
         <label>분류<select id="record-category" required></select></label>
@@ -80,7 +85,7 @@
         <label>조사 날짜<input id="surveyed-at" type="date" required /></label>
         <label class="file-field">사진 <span>최대 3장 · 자동 압축</span><input id="record-images" type="file" accept="image/*" capture="environment" multiple /></label>
         <div id="image-preview" class="image-preview"></div>
-        <div class="dialog-actions"><button class="ghost" value="cancel">취소</button><button id="save-record" class="primary" value="default">저장</button></div>
+        <div class="dialog-actions"><button id="record-cancel" class="ghost" type="button">취소</button><button id="save-record" class="primary" type="submit">저장</button></div>
       </form>
     </dialog>
 

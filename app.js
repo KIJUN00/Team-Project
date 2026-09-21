@@ -173,6 +173,17 @@ function openRecordForm(record = null) {
   $('#record-dialog').showModal()
 }
 
+function closeRecordForm() {
+  state.newFiles = []
+  state.picked = null
+  $('#record-images').value = ''
+  $('#image-preview').innerHTML = ''
+  $('#record-dialog').close()
+}
+
+$('#record-close').addEventListener('click', closeRecordForm)
+$('#record-cancel').addEventListener('click', closeRecordForm)
+
 $('#record-images').addEventListener('change', () => {
   const files = [...$('#record-images').files]
   if (files.length > CONFIG.maxImages) { $('#record-images').value=''; return toast(`사진은 최대 ${CONFIG.maxImages}장까지 등록할 수 있습니다.`) }
