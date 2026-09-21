@@ -172,7 +172,11 @@ function renderList() {
     const category = categoryOf(record.category)
     return `<button class="record-card" data-record="${record.id}"><div class="record-card-head"><span class="badge" style="--chip:${category.chip}"><i style="width:7px;height:7px;border-radius:50%;background:${category.color}"></i>${escapeHtml(record.category)}</span><span class="meta">${dateLabel(record.surveyed_at)}</span></div><p>${escapeHtml(record.memo)}</p><span class="meta">${record.image_paths?.length || 0}장 · ${escapeHtml(record.author_email || '')}</span></button>`
   }).join('') : '<div class="empty">아직 등록된 현장 기록이 없습니다.<br>첫 기록을 남겨보세요.</div>'
-  document.querySelectorAll('[data-record]').forEach((button) => button.addEventListener('click', () => showDetail(button.dataset.record)))
+  document.querySelectorAll('[data-record]').forEach((button) => button.addEventListener('click', () => {
+    const recordId = button.dataset.record
+    activateRecordPreview(recordId)
+    showDetail(recordId)
+  }))
 }
 
 $('#add-button').addEventListener('click', () => { state.pickMode = true; state.picked = null; $('#map-instruction').classList.remove('hidden'); toast('지도에서 기록할 위치를 눌러주세요.') })
