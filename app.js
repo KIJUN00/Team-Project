@@ -18,7 +18,7 @@ const CATEGORIES = [
 
 const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey)
 const $ = (selector) => document.querySelector(selector)
-const state = { session: null, profile: null, records: [], filter: '전체', map: null, markers: [], pickMode: false, picked: null, newFiles: [] }
+const state = { session: null, profile: null, records: [], filter: '전체', map: null, markers: [], recordOverlays: [], currentLocationOverlay: null, pickMode: false, picked: null, newFiles: [] }
 
 function toast(message) {
   const el = $('#toast'); el.textContent = message; el.classList.add('show')
@@ -101,10 +101,43 @@ function markerImage(category) {
 function renderMarkers() {
   if (!state.map) return
   state.markers.forEach((marker) => marker.setMap(null)); state.markers = []
+  state.recordOverlays.forEach((overlay) => overlay.close ? overlay.close() : overlay.setMap(null)); state.recordOverlays = []
   filteredRecords().forEach((record) => {
-    const marker = new kakao.maps.Marker({ map:state.map, position:new kakao.maps.LatLng(record.latitude, record.longitude), image:markerImage(record.category) })
+    const position = new kakao.maps.LatLng(record.latitude, record.longitude)
+    const marker = new kakao.maps.Marker({ map:state.map, position, image:markerImage(record.category) })
     kakao.maps.event.addListener(marker, 'click', () => showDetail(record.id)); state.markers.push(marker)
+
+    const infoWindow = new kakao.maps.InfoWindow({ position, content:mapPreviewHtml(record), removable:false, zIndex:20 })
+    infoWindow.open(state.map, marker)
+    state.recordOverlays.push(infoWindow)
+    if (record.image_paths?.length) {
+      db.storage.from('survey-photos').createSignedUrl(record.image_paths[0], 3600).then(({ data }) => {
+        if (data?.signedUrl && state.recordOverlays.includes(infoWindow)) infoWindow.setContent(mapPreviewHtml(record, data.signedUrl))
+      })
+    }
   })
+}
+
+function mapPreviewHtml(record, imageUrl = '') {
+  const hasPhoto = Boolean(record.image_paths?.length)
+  const photo = hasPhoto
+    ? imageUrl
+      ? `<img src="${escapeHtml(imageUrl)}" alt="첨부 사진 미리보기">`
+      : '<div class="map-photo-placeholder">사진</div>'
+    : ''
+  return `<button type="button" class="map-record-preview ${hasPhoto ? '' : 'no-photo'}" data-map-record="${record.id}" aria-label="${escapeHtml(record.category)} 기록 상세보기">${photo}<span>${escapeHtml(record.memo || '메모 없음')}</span></button>`
+}
+
+function showCurrentLocation(position) {
+  if (!state.currentLocationOverlay) {
+    const icon = document.createElement('div')
+    icon.className = 'current-location-marker'
+    icon.setAttribute('aria-label', '내 현재 위치')
+    state.currentLocationOverlay = new kakao.maps.CustomOverlay({ map:state.map, position, content:icon, xAnchor:.5, yAnchor:.5, zIndex:6 })
+  } else {
+    state.currentLocationOverlay.setPosition(position)
+    state.currentLocationOverlay.setMap(state.map)
+  }
 }
 
 async function loadRecords() {
@@ -141,6 +174,7 @@ function useCurrentLocation(openForm = false) {
   navigator.geolocation.getCurrentPosition(({ coords }) => {
     const position = new kakao.maps.LatLng(coords.latitude, coords.longitude)
     state.map.panTo(position)
+    showCurrentLocation(position)
     if (openForm) {
       state.picked = { lat:coords.latitude, lng:coords.longitude }
       state.pickMode = false
@@ -238,6 +272,11 @@ async function showDetail(id) {
   const edit=$('[data-edit-record]'); if(edit) edit.onclick=()=>{ $('#detail-dialog').close(); openRecordForm(record) }
   const del=$('[data-delete-record]'); if(del) del.onclick=()=>deleteRecord(record)
 }
+
+document.addEventListener('click', (event) => {
+  const preview = event.target.closest('[data-map-record]')
+  if (preview) showDetail(preview.dataset.mapRecord)
+})
 
 async function deleteRecord(record) {
   if (!confirm('이 기록과 첨부 사진을 삭제할까요?')) return
