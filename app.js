@@ -101,31 +101,42 @@ function markerImage(category) {
 function renderMarkers() {
   if (!state.map) return
   state.markers.forEach((marker) => marker.setMap(null)); state.markers = []
-  state.recordOverlays.forEach((overlay) => overlay.close ? overlay.close() : overlay.setMap(null)); state.recordOverlays = []
+  state.recordOverlays.forEach((item) => item.overlay.setMap(null)); state.recordOverlays = []
   filteredRecords().forEach((record) => {
     const position = new kakao.maps.LatLng(record.latitude, record.longitude)
     const marker = new kakao.maps.Marker({ map:state.map, position, image:markerImage(record.category) })
-    kakao.maps.event.addListener(marker, 'click', () => showDetail(record.id)); state.markers.push(marker)
+    kakao.maps.event.addListener(marker, 'click', () => activateRecordPreview(record.id)); state.markers.push(marker)
 
-    const infoWindow = new kakao.maps.InfoWindow({ position, content:mapPreviewHtml(record), removable:false, zIndex:20 })
-    infoWindow.open(state.map, marker)
-    state.recordOverlays.push(infoWindow)
+    const preview = document.createElement('button')
+    preview.type = 'button'
+    preview.className = `map-record-preview ${record.image_paths?.length ? '' : 'no-photo'}`
+    preview.dataset.mapRecord = record.id
+    preview.setAttribute('aria-label', `${record.category} 기록 상세보기`)
+    const memo = document.createElement('span')
+    memo.textContent = record.memo || '메모 없음'
     if (record.image_paths?.length) {
+      const image = new Image()
+      image.alt = '첨부 사진 미리보기'
+      image.loading = 'lazy'
+      preview.appendChild(image)
       db.storage.from('survey-photos').createSignedUrl(record.image_paths[0], 3600).then(({ data }) => {
-        if (data?.signedUrl && state.recordOverlays.includes(infoWindow)) infoWindow.setContent(mapPreviewHtml(record, data.signedUrl))
+        if (data?.signedUrl) image.src = data.signedUrl
       })
     }
+    preview.appendChild(memo)
+    const overlay = new kakao.maps.CustomOverlay({ position, content:preview, xAnchor:0, yAnchor:.5, clickable:true })
+    overlay.setMap(state.map)
+    overlay.setZIndex(4)
+    state.recordOverlays.push({ id:record.id, overlay, element:preview })
   })
 }
 
-function mapPreviewHtml(record, imageUrl = '') {
-  const hasPhoto = Boolean(record.image_paths?.length)
-  const photo = hasPhoto
-    ? imageUrl
-      ? `<img src="${escapeHtml(imageUrl)}" alt="첨부 사진 미리보기">`
-      : '<div class="map-photo-placeholder">사진</div>'
-    : ''
-  return `<button type="button" class="map-record-preview ${hasPhoto ? '' : 'no-photo'}" data-map-record="${record.id}" aria-label="${escapeHtml(record.category)} 기록 상세보기">${photo}<span>${escapeHtml(record.memo || '메모 없음')}</span></button>`
+function activateRecordPreview(recordId) {
+  state.recordOverlays.forEach((item) => {
+    const selected = item.id === recordId
+    item.overlay.setZIndex(selected ? 30 : 4)
+    item.element.classList.toggle('selected', selected)
+  })
 }
 
 function showCurrentLocation(position) {
