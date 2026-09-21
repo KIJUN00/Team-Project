@@ -94,8 +94,9 @@ function initMap() {
 
 function markerImage(category) {
   const { color } = categoryOf(category)
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="38" height="46" viewBox="0 0 38 46"><path fill="${color}" stroke="white" stroke-width="3" d="M19 1.5C9.3 1.5 1.5 9.3 1.5 19c0 13 17.5 25 17.5 25s17.5-12 17.5-25C36.5 9.3 28.7 1.5 19 1.5Z"/><circle cx="19" cy="18" r="6" fill="white"/></svg>`
-  return new kakao.maps.MarkerImage(`data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`, new kakao.maps.Size(38,46), { offset:new kakao.maps.Point(19,46) })
+  // 보이는 마커 크기는 유지하고 투명 여백을 더해 모바일 터치 영역만 넓힌다.
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="68" height="68" viewBox="0 0 68 68"><g transform="translate(15 22)"><path fill="${color}" stroke="white" stroke-width="3" d="M19 1.5C9.3 1.5 1.5 9.3 1.5 19c0 13 17.5 25 17.5 25s17.5-12 17.5-25C36.5 9.3 28.7 1.5 19 1.5Z"/><circle cx="19" cy="18" r="6" fill="white"/></g></svg>`
+  return new kakao.maps.MarkerImage(`data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`, new kakao.maps.Size(68,68), { offset:new kakao.maps.Point(34,68) })
 }
 
 function renderMarkers() {
@@ -303,3 +304,51 @@ async function loadMembers(){ const {data,error}=await db.from('team_members').s
 async function removeMember(email){ if(!confirm(`${email} 팀원을 삭제할까요?`))return; const {error}=await db.from('team_members').delete().eq('email',email); if(error)return toast(error.message); await loadMembers() }
 
 document.querySelectorAll('dialog').forEach((dialog)=>dialog.addEventListener('click',(event)=>{ if(event.target===dialog)dialog.close() }))
+
+// 모바일: 화면 상단에서 아래로 당기면 새로고침한다.
+function setupPullToRefresh() {
+  if (!window.matchMedia('(pointer: coarse)').matches) return
+  const indicator = $('#pull-refresh')
+  let startY = 0
+  let distance = 0
+  let tracking = false
+
+  document.addEventListener('touchstart', (event) => {
+    if (event.touches.length !== 1 || event.touches[0].clientY > 90 || event.target.closest('dialog')) return
+    startY = event.touches[0].clientY
+    distance = 0
+    tracking = true
+  }, { passive:true })
+
+  document.addEventListener('touchmove', (event) => {
+    if (!tracking) return
+    distance = Math.max(0, event.touches[0].clientY - startY)
+    if (!distance) return
+    if (distance > 12) event.preventDefault()
+    const progress = Math.min(distance, 110)
+    indicator.style.transform = `translate(-50%, ${progress - 52}px)`
+    indicator.classList.add('visible')
+    indicator.textContent = distance >= 90 ? '놓으면 새로고침' : '아래로 당겨 새로고침'
+  }, { passive:false })
+
+  document.addEventListener('touchend', () => {
+    if (!tracking) return
+    tracking = false
+    if (distance >= 90) {
+      indicator.textContent = '새로고침 중…'
+      indicator.classList.add('refreshing')
+      window.location.reload()
+      return
+    }
+    indicator.classList.remove('visible')
+    indicator.style.transform = ''
+  }, { passive:true })
+
+  document.addEventListener('touchcancel', () => {
+    tracking = false
+    indicator.classList.remove('visible')
+    indicator.style.transform = ''
+  }, { passive:true })
+}
+
+setupPullToRefresh()
