@@ -2,7 +2,7 @@ const CONFIG = {
   supabaseUrl: 'https://qdzklcmoqqksfnxjidby.supabase.co',
   supabaseKey: 'sb_publishable_VrsCSCN3W3upQQgWWu6TBA_8A2cLr6g',
   adminEmail: 'minkijon65@gmail.com',
-  center: { lat: 37.4567, lng: 126.6504 },
+  center: { lat: 37.4583, lng: 126.6551 },
   maxImages: 3,
 }
 
@@ -16,9 +16,23 @@ const CATEGORIES = [
   { name: '기타', color: '#63726a', chip: '#e9eeeb' },
 ]
 
+const INTEREST_AREA = [
+  { lat:37.458546, lng:126.653917 },
+  { lat:37.458795, lng:126.654512 },
+  { lat:37.458918, lng:126.654814 },
+  { lat:37.459020, lng:126.654989 },
+  { lat:37.458587, lng:126.655796 },
+  { lat:37.458584, lng:126.656098 },
+  { lat:37.458489, lng:126.656186 },
+  { lat:37.458181, lng:126.655583 },
+  { lat:37.457882, lng:126.655056 },
+  { lat:37.457690, lng:126.654842 },
+  { lat:37.457496, lng:126.654527 },
+]
+
 const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey)
 const $ = (selector) => document.querySelector(selector)
-const state = { session: null, profile: null, records: [], filter: '전체', map: null, markers: [], recordOverlays: [], currentLocationOverlay: null, pickMode: false, picked: null, newFiles: [] }
+const state = { session: null, profile: null, records: [], filter: '전체', map: null, markers: [], recordOverlays: [], currentLocationOverlay: null, interestAreaPolygon: null, pickMode: false, picked: null, newFiles: [] }
 
 function toast(message) {
   const el = $('#toast'); el.textContent = message; el.classList.add('show')
@@ -83,6 +97,7 @@ function initMap() {
   if (!window.kakao?.maps) return toast('카카오 지도를 불러오지 못했습니다. 도메인 등록을 확인하세요.')
   kakao.maps.load(() => {
     state.map = new kakao.maps.Map($('#map'), { center: new kakao.maps.LatLng(CONFIG.center.lat, CONFIG.center.lng), level: 4 })
+    renderInterestArea()
     kakao.maps.event.addListener(state.map, 'click', (event) => {
       if (!state.pickMode) return
       state.picked = { lat: event.latLng.getLat(), lng: event.latLng.getLng() }
@@ -90,6 +105,21 @@ function initMap() {
     })
     renderMarkers()
   })
+}
+
+function renderInterestArea() {
+  const path = INTEREST_AREA.map(({ lat, lng }) => new kakao.maps.LatLng(lat, lng))
+  state.interestAreaPolygon = new kakao.maps.Polygon({
+    map: state.map,
+    path,
+    strokeWeight: 4,
+    strokeColor: '#e76532',
+    strokeOpacity: .95,
+    strokeStyle: 'solid',
+    fillColor: '#f5a17d',
+    fillOpacity: .16,
+  })
+  state.interestAreaPolygon.setZIndex(1)
 }
 
 function markerImage(category) {
