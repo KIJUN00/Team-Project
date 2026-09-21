@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#12372a" />
+    <meta name="description" content="용현3동 행복마을 가꿈사업 공동 현장조사 지도" />
+    <title>용현3동 행복마을 현장기록</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <section id="auth-view" class="auth-view">
+      <div class="auth-brand">
+        <span class="brand-mark">용현3</span>
+        <div>
+          <p class="eyebrow">행복마을 가꿈사업</p>
+          <h1>우리 동네의 오늘을<br />지도에 남겨요.</h1>
+        </div>
+        <p class="auth-copy">골목을 걸으며 발견한 문제와 가능성을 사진과 메모로 함께 기록하는 조사 도구입니다.</p>
+      </div>
+      <form id="auth-form" class="auth-card">
+        <div>
+          <p class="eyebrow">팀원 전용</p>
+          <h2 id="auth-title">로그인</h2>
+          <p id="auth-description">등록된 팀원 이메일로 접속하세요.</p>
+        </div>
+        <label>이메일<input id="auth-email" type="email" autocomplete="email" required placeholder="name@example.com" /></label>
+        <label>비밀번호<input id="auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="6자 이상" /></label>
+        <button id="auth-submit" class="primary wide" type="submit">로그인</button>
+        <button id="auth-toggle" class="text-button" type="button">처음이신가요? 계정 만들기</button>
+        <p class="auth-note">계정을 만든 뒤 관리자가 팀원 이메일을 승인해야 지도를 사용할 수 있습니다.</p>
+      </form>
+    </section>
+
+    <div id="app-view" class="app-view hidden">
+      <header class="topbar">
+        <div class="brand-row">
+          <span class="brand-mark small">용현3</span>
+          <div><strong>행복마을 현장기록</strong><span id="record-count">기록 0개</span></div>
+        </div>
+        <div class="header-actions">
+          <button id="team-button" class="icon-button hidden" type="button" aria-label="팀원 관리">팀 관리</button>
+          <span id="user-email" class="user-email"></span>
+          <button id="logout-button" class="ghost" type="button">로그아웃</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="side-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">조사 기록</p><h2>현장 목록</h2></div>
+            <button id="add-button" class="primary" type="button">+ 기록 추가</button>
+          </div>
+          <div id="category-filters" class="filter-row" aria-label="분류 필터"></div>
+          <div id="record-list" class="record-list"></div>
+        </aside>
+
+        <section class="map-wrap">
+          <div id="map" aria-label="용현3동 현장조사 지도"></div>
+          <div class="map-tools">
+            <button id="locate-button" class="floating-button" type="button">◎ 내 위치</button>
+          </div>
+          <div id="map-instruction" class="map-instruction hidden">기록할 위치를 지도에서 선택하세요 <button id="cancel-pick" type="button">취소</button></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="record-dialog" class="sheet-dialog">
+      <form id="record-form" method="dialog">
+        <div class="dialog-head"><div><p class="eyebrow">현장 기록</p><h2 id="record-dialog-title">새 기록</h2></div><button class="close-button" value="cancel" aria-label="닫기">×</button></div>
+        <input id="record-id" type="hidden" />
+        <div class="coordinate-box"><span>선택 위치</span><strong id="coordinate-text">-</strong></div>
+        <label>분류<select id="record-category" required></select></label>
+        <label>현장 메모<textarea id="record-memo" rows="5" maxlength="1000" required placeholder="무엇을 발견했는지, 누구에게 어떤 불편이 있는지 적어주세요."></textarea></label>
+        <label>조사 날짜<input id="surveyed-at" type="date" required /></label>
+        <label class="file-field">사진 <span>최대 3장 · 자동 압축</span><input id="record-images" type="file" accept="image/*" capture="environment" multiple /></label>
+        <div id="image-preview" class="image-preview"></div>
+        <div class="dialog-actions"><button class="ghost" value="cancel">취소</button><button id="save-record" class="primary" value="default">저장</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="detail-dialog" class="detail-dialog">
+      <div id="detail-content"></div>
+    </dialog>
+
+    <dialog id="team-dialog" class="sheet-dialog">
+      <form id="team-form">
+        <div class="dialog-head"><div><p class="eyebrow">관리자</p><h2>팀원 관리</h2></div><button class="close-button" type="button" data-close="team">×</button></div>
+        <p class="helper">추가한 이메일로 가입한 사람만 조사 지도를 사용할 수 있습니다.</p>
+        <div class="inline-form"><input id="member-email" type="email" required placeholder="team@example.com" /><button class="primary" type="submit">추가</button></div>
+        <div id="member-list" class="member-list"></div>
+      </form>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=e6b1faa25b6d628b46791510c86dc80d&autoload=false"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
