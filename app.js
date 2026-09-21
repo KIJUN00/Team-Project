@@ -132,12 +132,34 @@ function renderList() {
 
 $('#add-button').addEventListener('click', () => { state.pickMode = true; state.picked = null; $('#map-instruction').classList.remove('hidden'); toast('지도에서 기록할 위치를 눌러주세요.') })
 $('#cancel-pick').addEventListener('click', () => { state.pickMode = false; $('#map-instruction').classList.add('hidden') })
-$('#locate-button').addEventListener('click', () => {
+function useCurrentLocation(openForm = false) {
+  const targetButton = openForm ? $('#current-record-button') : $('#locate-button')
+  const originalText = targetButton.textContent
+  targetButton.disabled = true
+  targetButton.textContent = '위치 확인 중…'
+
   navigator.geolocation.getCurrentPosition(({ coords }) => {
-    const position = new kakao.maps.LatLng(coords.latitude, coords.longitude); state.map.panTo(position)
-    if (state.pickMode) { state.picked = { lat:coords.latitude, lng:coords.longitude }; state.pickMode=false; $('#map-instruction').classList.add('hidden'); openRecordForm() }
-  }, () => toast('현재 위치를 확인할 수 없습니다. 위치 권한을 허용해주세요.'), { enableHighAccuracy:true })
-})
+    const position = new kakao.maps.LatLng(coords.latitude, coords.longitude)
+    state.map.panTo(position)
+    if (openForm) {
+      state.picked = { lat:coords.latitude, lng:coords.longitude }
+      state.pickMode = false
+      $('#map-instruction').classList.add('hidden')
+      openRecordForm()
+    } else {
+      toast('현재 위치로 이동했습니다.')
+    }
+    targetButton.disabled = false
+    targetButton.textContent = originalText
+  }, (error) => {
+    targetButton.disabled = false
+    targetButton.textContent = originalText
+    toast(error.code === 1 ? '위치 권한을 허용해주세요.' : '현재 위치를 확인할 수 없습니다.')
+  }, { enableHighAccuracy:true, timeout:12000, maximumAge:10000 })
+}
+
+$('#locate-button').addEventListener('click', () => useCurrentLocation(false))
+$('#current-record-button').addEventListener('click', () => useCurrentLocation(true))
 
 function openRecordForm(record = null) {
   $('#record-dialog-title').textContent = record ? '기록 수정' : '새 기록'

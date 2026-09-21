@@ -1,0 +1,14 @@
+.map-tools {
+  display: grid;
+  gap: 8px;
+}
+
+.floating-button.accent {
+  background: var(--orange);
+  color: #fff;
+}
+
+.floating-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
